@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>گالری آنلاین</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+    body {
+      background: #f5f7fa;
+      color: #1e293b;
+      padding: 0;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .hidden { display: none !important; }
+
+    /* ===== HEADER ===== */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      min-height: 50px;
+    }
+    .header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .search-box {
+      padding: 4px 10px;
+      border-radius: 30px;
+      border: 1px solid #cbd5e1;
+      width: 100px;
+      background: #fff;
+      font-size: 0.75rem;
+      transition: 0.2s;
+    }
+    .search-box:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+      width: 120px;
+    }
+    .hamburger {
+      font-size: 1.6rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0 4px;
+      color: #1e293b;
+      line-height: 1;
+    }
+    .user-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #e2e8f0;
+      background: #cbd5e1;
+      flex-shrink: 0;
+    }
+
+    /* ===== GALLERY GRID (4 columns, tiny gap) ===== */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3px;
+      padding: 3px;
+      flex: 1;
+    }
+    .photo-card {
+      background: #fff;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      aspect-ratio: 1 / 1;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      transition: 0.1s;
+    }
+    .photo-card:active { transform: scale(0.97); }
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #e2e8f0;
+    }
+    .photo-card .photo-name {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 3px 5px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.5));
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .photo-card .pin-badge {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      background: rgba(239,68,68,0.85);
+      color: #fff;
+      border-radius: 20px;
+      padding: 1px 6px;
+      font-size: 0.5rem;
+      font-weight: 700;
+      backdrop-filter: blur(2px);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .photo-card .like-badge {
+      position: absolute;
+      bottom: 20px;
+      right: 4px;
+      color: #ef4444;
+      font-size: 0.7rem;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+    /* No photo-actions overlay anymore - will use modal */
+
+    /* ===== ADD PHOTO BTN ===== */
+    .add-photo-btn {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 1.8rem;
+      border: none;
+      box-shadow: 0 4px 16px rgba(59,130,246,0.4);
+      cursor: pointer;
+      transition: 0.2s;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .add-photo-btn:active { transform: scale(0.9); }
+
+    /* ===== DRAWER ===== */
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -280px;
+      width: 260px;
+      height: 100%;
+      background: #fff;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+      padding: 16px 12px;
+      transition: 0.3s ease;
+      z-index: 20;
+      overflow-y: auto;
+    }
+    .drawer.open { right: 0; }
+    .drawer-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.3);
+      display: none;
+      z-index: 19;
+    }
+    .drawer-backdrop.show { display: block; }
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .drawer-header h2 { font-size: 1rem; }
+    .drawer-close {
+      background: none; border: none;
+      font-size: 1.4rem; cursor: pointer;
+      color: #64748b;
+    }
+    .drawer-category {
+      padding: 6px 10px;
+      margin: 2px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.15s;
+      font-weight: 500;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+    .drawer-category:active { background: #e2e8f0; }
+    .drawer-category.active {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .drawer-category .cat-actions {
+      display: none;
+      gap: 4px;
+    }
+    .drawer-category .cat-actions.show { display: flex; }
+    .drawer-category .cat-actions button {
+      background: none; border: none;
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 0 4px;
+      color: #475569;
+    }
+    .drawer-category .cat-actions button:active { color: #1e293b; }
+    .drawer-category .pin-cat { color: #fbbf24; }
+    .drawer-category .unpin-cat { color: #f87171; }
+
+    .drawer-footer {
+      margin-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+    }
+    .drawer-footer button {
+      background: none; border: none;
+      color: #ef4444;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 6px 0;
+      width: 100%;
+      text-align: right;
+      font-size: 0.85rem;
+    }
+    .drawer-footer .favorites-btn {
+      color: #3b82f6;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* category add (small) */
+    #ownerCategoryAdd {
+      display: flex;
+      gap: 4px;
+      margin-top: 10px;
+      align-items: center;
+    }
+    #ownerCategoryAdd input {
+      flex: 1;
+      padding: 4px 8px;
+      border-radius: 20px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.7rem;
+      height: 28px;
+    }
+    #ownerCategoryAdd button {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 0 12px;
+      height: 28px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===== FULLSCREEN PHOTO MODAL ===== */
+    .fullscreen-modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.92);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 40;
+      padding: 0;
+      backdrop-filter: blur(8px);
+    }
+    .fullscreen-modal.open { display: flex; }
+    .fullscreen-modal .modal-close {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      font-size: 1.8rem;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 41;
+    }
+    .fullscreen-modal .modal-close:active { background: rgba(255,255,255,0.3); }
+    .fullscreen-modal .fullscreen-image {
+      max-width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    .fullscreen-modal .photo-info {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      color: #fff;
+      text-align: center;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
+      border-radius: 14px;
+      backdrop-filter: blur(4px);
+    }
+    .fullscreen-modal .photo-info h3 {
+      font-size: 1rem;
+      margin-bottom: 2px;
+    }
+    .fullscreen-modal .photo-info p {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    .fullscreen-modal .action-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .fullscreen-modal .action-row button {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .fullscreen-modal .action-row button:active { background: rgba(255,255,255,0.25); }
+    .fullscreen-modal .action-row .like-btn {
+      background: rgba(239,68,68,0.25);
+      border-color: rgba(239,68,68,0.4);
+    }
+    .fullscreen-modal .action-row .like-btn.liked {
+      background: rgba(239,68,68,0.5);
+      border-color: #ef4444;
+    }
+    .fullscreen-modal .action-row .more-btn {
+      background: rgba(59,130,246,0.3);
+      border-color: rgba(59,130,246,0.5);
+    }
+
+    /* ===== PHOTO ACTION MODAL (for owner long press) ===== */
+    .photo-action-modal .action-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .photo-action-modal .action-grid button {
+      background: #f1f5f9;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      flex: 1 0 calc(50% - 8px);
+      transition: 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .photo-action-modal .action-grid button:active {
+      background: #e2e8f0;
+    }
+    .photo-action-modal .action-grid .pin-act { background: #fbbf24; color: #1e293b; }
+    .photo-action-modal .action-grid .unpin-act { background: #f87171; color: #fff; }
+    .photo-action-modal .action-grid .edit-act { background: #3b82f6; color: #fff; }
+    .photo-action-modal .action-grid .delete-act { background: #ef4444; color: #fff; }
+
+    /* ===== AUTH ===== */
+    .auth-container {
+      max-width: 380px;
+      margin: 30px auto;
+      background: #fff;
+      padding: 28px 20px;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    .auth-container h2 {
+      font-size: 1.3rem;
+      margin-bottom: 14px;
+    }
+    .auth-container .input-group {
+      text-align: right;
+      margin-bottom: 10px;
+    }
+    .auth-container .input-group label {
+      font-weight: 600;
+      font-size: 0.8rem;
+      display: block;
+      margin-bottom: 3px;
+    }
+    .auth-container .input-group input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.9rem;
+    }
+    .auth-container .btn-primary {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 30px;
+      font-weight: 600;
+      width: 100%;
+      cursor: pointer;
+      font-size: 0.95rem;
+      margin-top: 6px;
+    }
+    .auth-container .btn-primary:active { background: #2563eb; }
+    .auth-container .switch-link {
+      color: #3b82f6;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+    .auth-container .role-hint {
+      font-size: 0.7rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 480px) {
+      .gallery-grid { gap: 2px; padding: 2px; }
+      .header h1 { font-size: 0.95rem; }
+      .search-box { width: 80px; font-size: 0.65rem; padding: 3px 8px; }
+      .search-box:focus { width: 100px; }
+      .photo-card .photo-name { font-size: 0.5rem; padding: 2px 4px; }
+      .fullscreen-modal .photo-info h3 { font-size: 0.9rem; }
+      .fullscreen-modal .action-row button { padding: 5px 12px; font-size: 0.75rem; }
+      .add-photo-btn { width: 44px; height: 44px; font-size: 1.6rem; bottom: 14px; right: 14px; }
+      .drawer { width: 240px; right: -260px; }
+      .photo-action-modal .action-grid button { flex: 1 0 100%; }
+    }
+    @media (min-width: 600px) {
+      .gallery-grid { gap: 4px; padding: 4px; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      .gallery-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 2px; padding: 2px;
+      }
+      .header { min-height: 40px; padding: 4px 10px; }
+      .header h1 { font-size: 0.8rem; }
+      .photo-card .photo-name { font-size: 0.45rem; padding: 1px 3px; }
+      .fullscreen-modal .fullscreen-image { max-height: 70vh; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== AUTH ==================== -->
+  <div id="authContainer" class="auth-container">
+    <h2>📸 گالری آنلاین</h2>
+    <p style="color:#64748b; margin-bottom:16px;">ورود / ثبت‌نام</p>
+
+    <div id="loginForm">
+      <div class="input-group">
+        <label>نام کاربری</label>
+        <input type="text" id="loginUsername" placeholder="نام کاربری" />
+      </div>
+      <div class="input-group">
+        <label>رمز عبور</label>
+        <input type="password" id="loginPassword" placeholder="رمز عبور" />
+      </div>
+      <button id="loginBtn" class="btn-primary">ورود</button>
+      <p style="margin-top:10px; font-size:0.85rem;">
+        حساب ندارید؟ <span id="showRegister" class="switch-link">ثبت‌نام کنید</span>
+      </p>
+    </div>
+
+    <div id="registerForm" class="hidden">
+      <div class="input-group">
+        <label>نام کاربری (یکتا)</label>
+        <input type="text" id="registerUsername" placeholder="نام کاربری" />
+      </div>
+      <div class="input-group">
+        <label>رمز عبور</label>
+        <input type="password" id="registerPassword" placeholder="رمز عبور" />
+      </div>
+      <div class="input-group">
+        <label>تکرار رمز عبور</label>
+        <input type="password" id="registerPasswordConfirm" placeholder="تکرار رمز" />
+      </div>
+      <div class="input-group">
+        <label>عکس پروفایل (اختیاری)</label>
+        <input type="file" id="registerAvatar" accept="image/*" />
+      </div>
+      <p class="role-hint">اگر رمز <strong>1271390</strong> باشد، نقش <strong>مالک</strong> می‌گیرید.</p>
+      <button id="registerBtn" class="btn-primary">ثبت‌نام</button>
+      <p style="margin-top:10px; font-size:0.85rem;">
+        قبلاً ثبت‌نام کرده‌اید؟ <span id="showLogin" class="switch-link">ورود</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN APP ==================== -->
+  <div id="mainApp" class="hidden" style="display:flex; flex-direction:column; height:100vh;">
+
+    <header class="header">
+      <h1>📸 گالری آنلاین</h1>
+      <div class="header-actions">
+        <input type="text" id="searchInput" class="search-box" placeholder="جستجو..." />
+        <img id="headerAvatar" class="user-avatar" src="" alt="avatar" />
+        <button id="hamburgerBtn" class="hamburger">☰</button>
+      </div>
+    </header>
+
+    <div class="gallery-grid" id="galleryGrid"></div>
+
+    <button id="addPhotoBtn" class="add-photo-btn hidden">+</button>
+
+    <!-- ========== DRAWER ========== -->
+    <div id="drawerBackdrop" class="drawer-backdrop"></div>
+    <div id="drawer" class="drawer">
+      <div class="drawer-header">
+        <h2>دسته‌بندی‌ها</h2>
+        <button id="drawerCloseBtn" class="drawer-close">✕</button>
+      </div>
+      <div id="categoryList"></div>
+
+      <div id="ownerCategoryAdd" class="hidden">
+        <input type="text" id="newCategoryInput" placeholder="دسته جدید" />
+        <button id="addCategoryBtn">+</button>
+      </div>
+
+      <div class="drawer-footer">
+        <div id="favoritesBtn" class="favorites-btn">❤️ گالری من</div>
+        <button id="logoutBtn">🚪 خروج</button>
+      </div>
+    </div>
+
+    <!-- ========== FULLSCREEN PHOTO MODAL ========== -->
+    <div id="photoModal" class="fullscreen-modal">
+      <button class="modal-close" id="photoModalClose">✕</button>
+      <img id="detailImage" class="fullscreen-image" src="" alt="photo" />
+      <div class="photo-info">
+        <h3 id="detailName"></h3>
+        <p id="detailDesc"></p>
+        <div class="action-row">
+          <button id="likeBtn" class="like-btn">❤️ لایک</button>
+          <button id="shareBtn">📋 کپی</button>
+          <button id="downloadBtn">⬇️ دانلود</button>
+          <button id="moreBtn" class="more-btn hidden">🔗 اطلاعات بیشتر</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== EDIT PHOTO MODAL ========== -->
+    <div id="editPhotoModal" class="fullscreen-modal" style="background: rgba(0,0,0,0.7);">
+      <div style="background:#fff; max-width:360px; width:90%; border-radius:20px; padding:20px; position:relative; max-height:90vh; overflow-y:auto;">
+        <button class="modal-close" id="editModalClose" style="position:absolute; top:6px; left:12px; font-size:1.6rem; background:none; border:none; color:#1e293b; cursor:pointer;">✕</button>
+        <h2 id="editModalTitle" style="font-size:1.1rem; margin-bottom:12px;">افزودن عکس</h2>
+        <input type="text" id="editPhotoName" placeholder="نام عکس" style="width:100%; padding:8px; border-radius:10px; border:1px solid #cbd5e1; margin-bottom:6px; font-size:0.9rem;" />
+        <textarea id="editPhotoDesc" placeholder="توضیحات" style="width:100%; padding:8px; border-radius:10px; border:1px solid #cbd5e1; margin-bottom:6px; min-height:50px; font-size:0.9rem;"></textarea>
+        <input type="text" id="editPhotoLink" placeholder="لینک (اختیاری)" style="width:100%; padding:8px; border-radius:10px; border:1px solid #cbd5e1; margin-bottom:6px; font-size:0.9rem;" />
+        <select id="editPhotoCategory" style="width:100%; padding:8px; border-radius:10px; border:1px solid #cbd5e1; margin-bottom:6px; font-size:0.9rem;"></select>
+        <input type="file" id="editPhotoFile" accept="image/*" style="margin-bottom:6px; font-size:0.8rem;" />
+        <button id="editPhotoSubmit" class="btn-primary" style="background:#3b82f6; color:#fff; border:none; padding:10px; border-radius:30px; font-weight:600; width:100%; cursor:pointer; font-size:0.95rem;">ذخیره</button>
+        <input type="hidden" id="editPhotoId" />
+      </div>
+    </div>
+
+    <!-- ========== PHOTO ACTION MODAL (owner long press) ========== -->
+    <div id="photoActionModal" class="fullscreen-modal photo-action-modal" style="background: rgba(0,0,0,0.6); z-index:35;">
+      <div style="background:#fff; max-width:340px; width:90%; border-radius:20px; padding:20px; position:relative;">
+        <button class="modal-close" id="photoActionClose" style="position:absolute; top:4px; left:12px; font-size:1.4rem; background:none; border:none; color:#1e293b; cursor:pointer;">✕</button>
+        <h3 style="font-size:1rem; margin-bottom:8px;">مدیریت عکس</h3>
+        <p id="photoActionName" style="font-size:0.85rem; color:#475569; margin-bottom:12px;"></p>
+        <div class="action-grid">
+          <button id="photoActPin" class="pin-act">📌 پین</button>
+          <button id="photoActUnpin" class="unpin-act">🔓 برداشتن</button>
+          <button id="photoActEdit" class="edit-act">✏️ ویرایش</button>
+          <button id="photoActDelete" class="delete-act">🗑️ حذف</button>
+        </div>
+        <input type="hidden" id="photoActionId" />
+      </div>
+    </div>
+
+    <!-- ========== CATEGORY EDIT POPUP ========== -->
+    <div id="catEditModal" class="fullscreen-modal" style="background: rgba(0,0,0,0.5); z-index:35;">
+      <div style="background:#fff; max-width:320px; width:90%; border-radius:20px; padding:20px; position:relative;">
+        <button class="modal-close" id="catEditClose" style="position:absolute; top:4px; left:12px; font-size:1.4rem; background:none; border:none; color:#1e293b; cursor:pointer;">✕</button>
+        <h3 style="font-size:1rem; margin-bottom:12px;">مدیریت دسته</h3>
+        <input type="text" id="catEditName" placeholder="نام جدید" style="width:100%; padding:8px; border-radius:10px; border:1px solid #cbd5e1; margin-bottom:8px; font-size:0.9rem;" />
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="catEditPinBtn" class="btn-primary" style="flex:1; background:#fbbf24; color:#1e293b; border:none; padding:8px; border-radius:30px; font-weight:600; cursor:pointer; font-size:0.85rem;">📌 پین</button>
+          <button id="catEditUnpinBtn" class="btn-primary" style="flex:1; background:#94a3b8; color:#fff; border:none; padding:8px; border-radius:30px; font-weight:600; cursor:pointer; font-size:0.85rem;">🔓 برداشتن</button>
+          <button id="catEditSaveBtn" class="btn-primary" style="flex:1; background:#3b82f6; color:#fff; border:none; padding:8px; border-radius:30px; font-weight:600; cursor:pointer; font-size:0.85rem;">💾 ذخیره</button>
+          <button id="catEditDeleteBtn" class="btn-primary" style="flex:1; background:#ef4444; color:#fff; border:none; padding:8px; border-radius:30px; font-weight:600; cursor:pointer; font-size:0.85rem;">🗑️ حذف</button>
+        </div>
+        <input type="hidden" id="catEditId" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JAVASCRIPT (IndexedDB) ==================== -->
+  <script>
+    (function() {
+      'use strict';
+
+      // ============ INDEXEDDB ============
+      const DB_NAME = 'GalleryDB';
+      const DB_VERSION = 3;
+
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('users')) {
+              const store = db.createObjectStore('users', { keyPath: 'id', autoIncrement: true });
+              store.createIndex('username', 'username', { unique: true });
+            } else {
+              const store = e.target.transaction.objectStore('users');
+              if (!store.indexNames.contains('username')) {
+                store.createIndex('username', 'username', { unique: true });
+              }
+            }
+            if (!db.objectStoreNames.contains('photos')) {
+              const store = db.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
+              store.createIndex('pinned', 'pinned', { unique: false });
+            } else {
+              const store = e.target.transaction.objectStore('photos');
+              if (!store.indexNames.contains('pinned')) {
+                store.createIndex('pinned', 'pinned', { unique: false });
+              }
+            }
+            if (!db.objectStoreNames.contains('categories')) {
+              const store = db.createObjectStore('categories', { keyPath: 'id', autoIncrement: true });
+              store.createIndex('pinned', 'pinned', { unique: false });
+            } else {
+              const store = e.target.transaction.objectStore('categories');
+              if (!store.indexNames.contains('pinned')) {
+                store.createIndex('pinned', 'pinned', { unique: false });
+              }
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+
+      function dbAction(storeName, mode, callback) {
+        return openDB().then(db => {
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, mode);
+            const store = tx.objectStore(storeName);
+            const req = callback(store);
+            tx.oncomplete = () => resolve(req.result);
+            tx.onerror = () => reject(tx.error);
+          });
+        });
+      }
+
+      function getAll(storeName) {
+        return dbAction(storeName, 'readonly', store => store.getAll());
+      }
+      function add(storeName, data) {
+        return dbAction(storeName, 'readwrite', store => store.add(data));
+      }
+      function put(storeName, data) {
+        return dbAction(storeName, 'readwrite', store => store.put(data));
+      }
+      function remove(storeName, id) {
+        return dbAction(storeName, 'readwrite', store => store.delete(id));
+      }
+
+      // ============ STATE ============
+      let currentUser = null;
+      let allPhotos = [];
+      let allCategories = [];
+      let filteredPhotos = [];
+      let selectedCategory = 'all';
+      let showingFavorites = false;
+      let longPressTimer = null;
+
+      // DOM refs
+      const $ = id => document.getElementById(id);
+      const authContainer = $('authContainer');
+      const mainApp = $('mainApp');
+      const loginForm = $('loginForm');
+      const registerForm = $('registerForm');
+      const loginUsername = $('loginUsername');
+      const loginPassword = $('loginPassword');
+      const loginBtn = $('loginBtn');
+      const showRegister = $('showRegister');
+      const registerUsername = $('registerUsername');
+      const registerPassword = $('registerPassword');
+      const registerPasswordConfirm = $('registerPasswordConfirm');
+      const registerAvatar = $('registerAvatar');
+      const registerBtn = $('registerBtn');
+      const showLogin = $('showLogin');
+      const headerAvatar = $('headerAvatar');
+      const searchInput = $('searchInput');
+      const galleryGrid = $('galleryGrid');
+      const addPhotoBtn = $('addPhotoBtn');
+      const hamburgerBtn = $('hamburgerBtn');
+      const drawer = $('drawer');
+      const drawerBackdrop = $('drawerBackdrop');
+      const drawerCloseBtn = $('drawerCloseBtn');
+      const categoryList = $('categoryList');
+      const ownerCategoryAdd = $('ownerCategoryAdd');
+      const newCategoryInput = $('newCategoryInput');
+      const addCategoryBtn = $('addCategoryBtn');
+      const logoutBtn = $('logoutBtn');
+      const favoritesBtn = $('favoritesBtn');
+      const photoModal = $('photoModal');
+      const photoModalClose = $('photoModalClose');
+      const detailImage = $('detailImage');
+      const detailName = $('detailName');
+      const detailDesc = $('detailDesc');
+      const shareBtn = $('shareBtn');
+      const downloadBtn = $('downloadBtn');
+      const likeBtn = $('likeBtn');
+      const moreBtn = $('moreBtn');
+      const editPhotoModal = $('editPhotoModal');
+      const editModalClose = $('editModalClose');
+      const editModalTitle = $('editModalTitle');
+      const editPhotoName = $('editPhotoName');
+      const editPhotoDesc = $('editPhotoDesc');
+      const editPhotoLink = $('editPhotoLink');
+      const editPhotoCategory = $('editPhotoCategory');
+      const editPhotoFile = $('editPhotoFile');
+      const editPhotoSubmit = $('editPhotoSubmit');
+      const editPhotoId = $('editPhotoId');
+      const photoActionModal = $('photoActionModal');
+      const photoActionClose = $('photoActionClose');
+      const photoActionName = $('photoActionName');
+      const photoActPin = $('photoActPin');
+      const photoActUnpin = $('photoActUnpin');
+      const photoActEdit = $('photoActEdit');
+      const photoActDelete = $('photoActDelete');
+      const photoActionId = $('photoActionId');
+      const catEditModal = $('catEditModal');
+      const catEditClose = $('catEditClose');
+      const catEditName = $('catEditName');
+      const catEditPinBtn = $('catEditPinBtn');
+      const catEditUnpinBtn = $('catEditUnpinBtn');
+      const catEditSaveBtn = $('catEditSaveBtn');
+      const catEditDeleteBtn = $('catEditDeleteBtn');
+      const catEditId = $('catEditId');
+
+      // ============ UI HELPERS ============
+      function showAuth() {
+        authContainer.classList.remove('hidden');
+        mainApp.classList.add('hidden');
+      }
+      function showApp() {
+        authContainer.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+      }
+      function closeDrawer() {
+        drawer.classList.remove('open');
+        drawerBackdrop.classList.remove('show');
+      }
+      function openDrawer() {
+        drawer.classList.add('open');
+        drawerBackdrop.classList.add('show');
+      }
+      function closeAllModals() {
+        photoModal.classList.remove('open');
+        editPhotoModal.classList.remove('open');
+        photoActionModal.classList.remove('open');
+        catEditModal.classList.remove('open');
+      }
+      function showToast(msg) { alert(msg); }
+
+      // ============ AUTH ============
+      function checkSession() {
+        const saved = sessionStorage.getItem('gallery_user');
+        if (saved) {
+          try {
+            const user = JSON.parse(saved);
+            currentUser = user;
+            headerAvatar.src = user.avatar || '';
+            showApp();
+            loadData();
+            return true;
+          } catch (e) {
+            console.error('Session error:', e);
+            sessionStorage.removeItem('gallery_user');
+          }
+        }
+        return false;
+      }
+
+      async function handleLogin() {
+        const username = loginUsername.value.trim();
+        const password = loginPassword.value.trim();
+        if (!username || !password) { showToast('لطفاً نام کاربری و رمز را وارد کنید.'); return; }
+        try {
+          const users = await getAll('users');
+          const found = users.find(u => u.username === username);
+          if (!found) { showToast('کاربری با این نام پیدا نشد.'); return; }
+          if (found.password !== password) { showToast('رمز عبور اشتباه است.'); return; }
+          currentUser = found;
+          sessionStorage.setItem('gallery_user', JSON.stringify(found));
+          headerAvatar.src = found.avatar || '';
+          showApp();
+          await loadData();
+        } catch (err) {
+          console.error('Login error:', err);
+          showToast('خطا در ورود: ' + err.message);
+        }
+      }
+
+      async function handleRegister() {
+        const username = registerUsername.value.trim();
+        const password = registerPassword.value.trim();
+        const confirm = registerPasswordConfirm.value.trim();
+        const avatarFile = registerAvatar.files[0];
+        if (!username || !password || !confirm) { showToast('تمامی فیلدها را پر کنید.'); return; }
+        if (password !== confirm) { showToast('رمز عبور و تکرار آن مطابقت ندارند.'); return; }
+        try {
+          const users = await getAll('users');
+          if (users.find(u => u.username === username)) { showToast('این نام کاربری قبلاً ثبت شده است.'); return; }
+          let avatarBase64 = '';
+          if (avatarFile) avatarBase64 = await readFileAsBase64(avatarFile);
+          const role = (password === '1271390') ? 'owner' : 'user';
+          const newUser = {
+            username, password, role,
+            avatar: avatarBase64,
+            favorites: [],
+            createdAt: Date.now()
+          };
+          const id = await add('users', newUser);
+          const savedUser = { ...newUser, id };
+          currentUser = savedUser;
+          sessionStorage.setItem('gallery_user', JSON.stringify(savedUser));
+          headerAvatar.src = savedUser.avatar || '';
+          showApp();
+          await loadData();
+        } catch (err) {
+          console.error('Register error:', err);
+          showToast('خطا در ثبت‌نام: ' + err.message);
+        }
+      }
+
+      function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function logout() {
+        sessionStorage.removeItem('gallery_user');
+        currentUser = null;
+        showingFavorites = false;
+        showAuth();
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+      }
+
+      // ============ DATA LOADING ============
+      async function loadData() {
+        try {
+          allCategories = await getAll('categories');
+          allCategories.sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            return (a.name || '').localeCompare(b.name || '');
+          });
+          allPhotos = await getAll('photos');
+          allPhotos.sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            return (b.createdAt || 0) - (a.createdAt || 0);
+          });
+          applyFilters();
+          renderCategories();
+          renderPhotos();
+          const isOwner = currentUser && currentUser.role === 'owner';
+          addPhotoBtn.classList.toggle('hidden', !isOwner);
+          ownerCategoryAdd.classList.toggle('hidden', !isOwner);
+        } catch (err) {
+          console.error('Load data error:', err);
+          showToast('خطا در بارگذاری داده: ' + err.message);
+        }
+      }
+
+      function applyFilters() {
+        let filtered = [...allPhotos];
+        if (showingFavorites) {
+          const favs = currentUser?.favorites || [];
+          filtered = filtered.filter(p => favs.includes(p.id));
+        } else if (selectedCategory !== 'all') {
+          filtered = filtered.filter(p => p.categoryId === selectedCategory);
+        }
+        const query = searchInput.value.trim().toLowerCase();
+        if (query) {
+          filtered = filtered.filter(p =>
+            (p.name && p.name.toLowerCase().includes(query)) ||
+            (p.description && p.description.toLowerCase().includes(query))
+          );
+        }
+        filteredPhotos = filtered;
+        renderPhotos();
+      }
+
+      // ============ RENDER ============
+      function renderPhotos() {
+        if (filteredPhotos.length === 0) {
+          galleryGrid.innerHTML =
+            `<p style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:30px 0;font-size:0.85rem;">هیچ عکسی یافت نشد.</p>`;
+          return;
+        }
+        let html = '';
+        filteredPhotos.forEach(photo => {
+          const pinnedBadge = photo.pinned ? `<span class="pin-badge">📌</span>` : '';
+          const liked = currentUser?.favorites?.includes(photo.id) ? '❤️' : '';
+          const likeBadge = liked ? `<span class="like-badge">❤️</span>` : '';
+          html += `
+            <div class="photo-card" data-id="${photo.id}" data-url="${photo.imageData}" data-name="${photo.name || ''}" data-desc="${photo.description || ''}" data-link="${photo.link || ''}">
+              <img src="${photo.imageData}" alt="${photo.name || 'عکس'}" loading="lazy" />
+              ${pinnedBadge} ${likeBadge}
+              <div class="photo-name">${photo.name || 'بدون نام'}</div>
+            </div>
+          `;
+        });
+        galleryGrid.innerHTML = html;
+        attachPhotoEvents();
+      }
+
+      function renderCategories() {
+        let html = '';
+        const allActive = selectedCategory === 'all' && !showingFavorites ? 'active' : '';
+        html += `<div class="drawer-category ${allActive}" data-cat="all">همه</div>`;
+        allCategories.forEach(cat => {
+          const active = selectedCategory === cat.id && !showingFavorites ? 'active' : '';
+          const pinnedIcon = cat.pinned ? '📌 ' : '';
+          html += `
+            <div class="drawer-category ${active}" data-cat="${cat.id}" data-name="${cat.name}">
+              <span>${pinnedIcon}${cat.name}</span>
+              <span class="cat-actions" data-catid="${cat.id}">
+                <button class="pin-cat" data-catid="${cat.id}">📌</button>
+                <button class="unpin-cat" data-catid="${cat.id}">🔓</button>
+                <button class="edit-cat" data-catid="${cat.id}">✏️</button>
+                <button class="delete-cat" data-catid="${cat.id}">🗑️</button>
+              </span>
+            </div>
+          `;
+        });
+        categoryList.innerHTML = html;
+
+        // Click on category (filter)
+        categoryList.querySelectorAll('.drawer-category').forEach(el => {
+          el.addEventListener('click', (e) => {
+            if (e.target.closest('.cat-actions')) return;
+            const catId = el.dataset.cat;
+            showingFavorites = false;
+            selectedCategory = catId || 'all';
+            applyFilters();
+            renderCategories();
+            closeDrawer();
+          });
+        });
+
+        // Long press on category (owner only)
+        if (currentUser && currentUser.role === 'owner') {
+          categoryList.querySelectorAll('.drawer-category').forEach(el => {
+            el.addEventListener('contextmenu', (e) => e.preventDefault());
+            el.addEventListener('touchstart', (e) => {
+              const touch = e.touches[0];
+              const el2 = document.elementFromPoint(touch.clientX, touch.clientY);
+              const catEl = el2.closest('.drawer-category');
+              if (!catEl) return;
+              const catId = catEl.dataset.cat;
+              if (!catId || catId === 'all') return;
+              longPressTimer = setTimeout(() => {
+                openCatEdit(catId);
+              }, 2000);
+            });
+            el.addEventListener('touchend', () => clearTimeout(longPressTimer));
+            el.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+            el.addEventListener('mousedown', (e) => {
+              const catId = e.currentTarget.dataset.cat;
+              if (!catId || catId === 'all') return;
+              longPressTimer = setTimeout(() => {
+                openCatEdit(catId);
+              }, 2000);
+            });
+            el.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+            el.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+          });
+        }
+
+        // Category action buttons (pin/unpin/edit/delete)
+        categoryList.querySelectorAll('.pin-cat').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = Number(btn.dataset.catid);
+            toggleCategoryPin(id, true);
+          });
+        });
+        categoryList.querySelectorAll('.unpin-cat').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = Number(btn.dataset.catid);
+            toggleCategoryPin(id, false);
+          });
+        });
+        categoryList.querySelectorAll('.edit-cat').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = Number(btn.dataset.catid);
+            openCatEdit(id);
+          });
+        });
+        categoryList.querySelectorAll('.delete-cat').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = Number(btn.dataset.catid);
+            if (confirm('آیا از حذف این دسته اطمینان دارید؟')) {
+              deleteCategory(id);
+            }
+          });
+        });
+
+        // Update dropdown in edit photo modal
+        const select = editPhotoCategory;
+        select.innerHTML = '<option value="">بدون دسته</option>';
+        allCategories.forEach(cat => {
+          select.innerHTML += `<option value="${cat.id}">${cat.name}</option>`;
+        });
+      }
+
+      // ============ CATEGORY CRUD (owner) ============
+      async function toggleCategoryPin(catId, pinned) {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        try {
+          const cat = allCategories.find(c => c.id === catId);
+          if (!cat) return;
+          cat.pinned = pinned;
+          await put('categories', cat);
+          showToast(pinned ? 'دسته پین شد.' : 'پین برداشته شد.');
+          loadData();
+        } catch (err) {
+          console.error('Toggle category pin error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      }
+
+      function openCatEdit(catId) {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        const cat = allCategories.find(c => c.id === catId);
+        if (!cat) return;
+        catEditId.value = catId;
+        catEditName.value = cat.name || '';
+        catEditModal.classList.add('open');
+      }
+
+      catEditClose.addEventListener('click', () => catEditModal.classList.remove('open'));
+      catEditModal.addEventListener('click', (e) => {
+        if (e.target === catEditModal) catEditModal.classList.remove('open');
+      });
+
+      catEditPinBtn.addEventListener('click', async () => {
+        const id = Number(catEditId.value);
+        if (id) { await toggleCategoryPin(id, true); catEditModal.classList.remove('open'); }
+      });
+      catEditUnpinBtn.addEventListener('click', async () => {
+        const id = Number(catEditId.value);
+        if (id) { await toggleCategoryPin(id, false); catEditModal.classList.remove('open'); }
+      });
+      catEditSaveBtn.addEventListener('click', async () => {
+        const id = Number(catEditId.value);
+        const newName = catEditName.value.trim();
+        if (!newName) { showToast('نام را وارد کنید.'); return; }
+        try {
+          const cat = allCategories.find(c => c.id === id);
+          if (!cat) return;
+          cat.name = newName;
+          await put('categories', cat);
+          showToast('نام دسته تغییر کرد.');
+          catEditModal.classList.remove('open');
+          loadData();
+        } catch (err) {
+          console.error('Save category error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      });
+      catEditDeleteBtn.addEventListener('click', async () => {
+        const id = Number(catEditId.value);
+        if (!confirm('حذف دسته؟')) return;
+        await deleteCategory(id);
+        catEditModal.classList.remove('open');
+      });
+
+      async function deleteCategory(catId) {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        try {
+          for (const photo of allPhotos) {
+            if (photo.categoryId === catId) {
+              photo.categoryId = '';
+              await put('photos', photo);
+            }
+          }
+          await remove('categories', catId);
+          showToast('دسته حذف شد.');
+          loadData();
+        } catch (err) {
+          console.error('Delete category error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      }
+
+      // ============ PHOTO EVENTS ============
+      function attachPhotoEvents() {
+        galleryGrid.removeEventListener('mousedown', onPhotoMouseDown);
+        galleryGrid.removeEventListener('mouseup', onPhotoMouseUp);
+        galleryGrid.removeEventListener('mouseleave', onPhotoMouseLeave);
+        galleryGrid.removeEventListener('click', onPhotoClick);
+        galleryGrid.addEventListener('mousedown', onPhotoMouseDown);
+        galleryGrid.addEventListener('mouseup', onPhotoMouseUp);
+        galleryGrid.addEventListener('mouseleave', onPhotoMouseLeave);
+        galleryGrid.addEventListener('click', onPhotoClick);
+
+        galleryGrid.removeEventListener('touchstart', onTouchStart);
+        galleryGrid.removeEventListener('touchend', onTouchEnd);
+        galleryGrid.removeEventListener('touchmove', onTouchMove);
+        galleryGrid.addEventListener('touchstart', onTouchStart);
+        galleryGrid.addEventListener('touchend', onTouchEnd);
+        galleryGrid.addEventListener('touchmove', onTouchMove);
+      }
+
+      function getPhotoCard(el) {
+        while (el && !el.classList.contains('photo-card')) el = el.parentElement;
+        return el;
+      }
+
+      let mouseTimer = null;
+      function onPhotoMouseDown(e) {
+        const card = getPhotoCard(e.target);
+        if (!card) return;
+        mouseTimer = setTimeout(() => {
+          openPhotoAction(card);
+        }, 2000);
+      }
+      function onPhotoMouseUp(e) { clearTimeout(mouseTimer); }
+      function onPhotoMouseLeave(e) { clearTimeout(mouseTimer); }
+
+      let touchTimer = null;
+      function onTouchStart(e) {
+        const touch = e.touches[0];
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        const card = getPhotoCard(el);
+        if (!card) return;
+        touchTimer = setTimeout(() => {
+          openPhotoAction(card);
+        }, 2000);
+      }
+      function onTouchEnd(e) { clearTimeout(touchTimer); }
+      function onTouchMove(e) { clearTimeout(touchTimer); }
+
+      function openPhotoAction(card) {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        const id = Number(card.dataset.id);
+        const photo = allPhotos.find(p => p.id === id);
+        if (!photo) return;
+        photoActionId.value = id;
+        photoActionName.textContent = photo.name || 'بدون نام';
+        photoActionModal.classList.add('open');
+      }
+
+      function onPhotoClick(e) {
+        const card = getPhotoCard(e.target);
+        if (!card) return;
+        const url = card.dataset.url;
+        const name = card.dataset.name;
+        const desc = card.dataset.desc;
+        const link = card.dataset.link || '';
+        if (url) {
+          detailImage.src = url;
+          detailName.textContent = name || 'بدون نام';
+          detailDesc.textContent = desc || '';
+          const photoId = Number(card.dataset.id);
+          const liked = currentUser?.favorites?.includes(photoId) || false;
+          likeBtn.dataset.photoid = photoId;
+          likeBtn.textContent = liked ? '❤️ لایک شده' : '🤍 لایک';
+          likeBtn.classList.toggle('liked', liked);
+          // Show "more" button if link exists
+          if (link && link.trim() !== '') {
+            moreBtn.classList.remove('hidden');
+            moreBtn.dataset.url = link;
+          } else {
+            moreBtn.classList.add('hidden');
+          }
+          photoModal.classList.add('open');
+        }
+      }
+
+      // ============ PHOTO ACTION MODAL BUTTONS ============
+      photoActionClose.addEventListener('click', () => photoActionModal.classList.remove('open'));
+      photoActionModal.addEventListener('click', (e) => {
+        if (e.target === photoActionModal) photoActionModal.classList.remove('open');
+      });
+
+      photoActPin.addEventListener('click', async () => {
+        const id = Number(photoActionId.value);
+        if (id) { await togglePhotoPin(id, true); photoActionModal.classList.remove('open'); }
+      });
+      photoActUnpin.addEventListener('click', async () => {
+        const id = Number(photoActionId.value);
+        if (id) { await togglePhotoPin(id, false); photoActionModal.classList.remove('open'); }
+      });
+      photoActEdit.addEventListener('click', () => {
+        const id = Number(photoActionId.value);
+        if (id) { photoActionModal.classList.remove('open'); openEditPhoto(id); }
+      });
+      photoActDelete.addEventListener('click', async () => {
+        const id = Number(photoActionId.value);
+        if (id && confirm('حذف عکس؟')) {
+          await deletePhoto(id);
+          photoActionModal.classList.remove('open');
+        }
+      });
+
+      // ============ PHOTO PIN ============
+      async function togglePhotoPin(photoId, pinned) {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        try {
+          const photo = allPhotos.find(p => p.id === photoId);
+          if (!photo) return;
+          photo.pinned = pinned;
+          await put('photos', photo);
+          showToast(pinned ? 'عکس پین شد.' : 'پین برداشته شد.');
+          loadData();
+        } catch (err) {
+          console.error('Toggle photo pin error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      }
+
+      // ============ PHOTO CRUD ============
+      addPhotoBtn.addEventListener('click', () => {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        openEditPhoto(null);
+      });
+
+      function openEditPhoto(photoId) {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        const isEdit = photoId !== null && photoId !== undefined;
+        editModalTitle.textContent = isEdit ? 'ویرایش عکس' : 'افزودن عکس جدید';
+        editPhotoId.value = photoId || '';
+        if (isEdit) {
+          const photo = allPhotos.find(p => p.id === photoId);
+          if (!photo) return;
+          editPhotoName.value = photo.name || '';
+          editPhotoDesc.value = photo.description || '';
+          editPhotoLink.value = photo.link || '';
+          editPhotoCategory.value = photo.categoryId || '';
+          editPhotoFile.value = '';
+        } else {
+          editPhotoName.value = '';
+          editPhotoDesc.value = '';
+          editPhotoLink.value = '';
+          editPhotoCategory.value = '';
+          editPhotoFile.value = '';
+        }
+        editPhotoModal.classList.add('open');
+      }
+
+      editPhotoSubmit.addEventListener('click', async () => {
+        const id = Number(editPhotoId.value) || null;
+        const name = editPhotoName.value.trim();
+        const desc = editPhotoDesc.value.trim();
+        const link = editPhotoLink.value.trim();
+        const categoryId = editPhotoCategory.value || '';
+        const file = editPhotoFile.files[0];
+        if (!name) { showToast('نام عکس را وارد کنید.'); return; }
+        try {
+          let imageData = '';
+          if (file) imageData = await readFileAsBase64(file);
+          else if (id) { const old = allPhotos.find(p => p.id === id); if (old) imageData = old.imageData; }
+          if (!imageData && !id) { showToast('لطفاً یک عکس انتخاب کنید.'); return; }
+          const data = { name, description: desc, link: link || '', categoryId: categoryId || '', imageData, updatedAt: Date.now() };
+          if (id) {
+            data.id = id;
+            if (!data.imageData) { const old = allPhotos.find(p => p.id === id); if (old) data.imageData = old.imageData; }
+            const oldPhoto = allPhotos.find(p => p.id === id);
+            if (oldPhoto) data.pinned = oldPhoto.pinned || false;
+            await put('photos', data);
+            showToast('عکس ویرایش شد.');
+          } else {
+            data.createdAt = Date.now();
+            data.uploadedBy = currentUser.username;
+            data.pinned = false;
+            await add('photos', data);
+            showToast('عکس جدید افزوده شد.');
+          }
+          closeAllModals();
+          loadData();
+        } catch (err) {
+          console.error('Save photo error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      });
+
+      async function deletePhoto(photoId) {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        try {
+          await remove('photos', photoId);
+          const users = await getAll('users');
+          for (const user of users) {
+            if (user.favorites && user.favorites.includes(photoId)) {
+              user.favorites = user.favorites.filter(id => id !== photoId);
+              await put('users', user);
+            }
+          }
+          showToast('عکس حذف شد.');
+          loadData();
+        } catch (err) {
+          console.error('Delete photo error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      }
+
+      // ============ CATEGORY ADD ============
+      addCategoryBtn.addEventListener('click', async () => {
+        if (!currentUser || currentUser.role !== 'owner') return;
+        const name = newCategoryInput.value.trim();
+        if (!name) { showToast('نام دسته را وارد کنید.'); return; }
+        try {
+          await add('categories', { name, createdBy: currentUser.username, pinned: false, createdAt: Date.now() });
+          newCategoryInput.value = '';
+          showToast('دسته جدید افزوده شد.');
+          loadData();
+        } catch (err) {
+          console.error('Add category error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      });
+
+      // ============ FAVORITES (personal gallery) ============
+      favoritesBtn.addEventListener('click', () => {
+        showingFavorites = !showingFavorites;
+        if (showingFavorites) {
+          selectedCategory = 'all';
+          favoritesBtn.textContent = '❤️ بازگشت به همه';
+        } else {
+          favoritesBtn.textContent = '❤️ گالری من';
+        }
+        applyFilters();
+        renderCategories();
+        closeDrawer();
+      });
+
+      // Like/Unlike in fullscreen modal
+      likeBtn.addEventListener('click', async () => {
+        if (!currentUser) return;
+        const photoId = Number(likeBtn.dataset.photoid);
+        if (!photoId) return;
+        try {
+          const users = await getAll('users');
+          const user = users.find(u => u.id === currentUser.id);
+          if (!user) return;
+          let favs = user.favorites || [];
+          const idx = favs.indexOf(photoId);
+          if (idx > -1) {
+            favs.splice(idx, 1);
+            likeBtn.textContent = '🤍 لایک';
+            likeBtn.classList.remove('liked');
+          } else {
+            favs.push(photoId);
+            likeBtn.textContent = '❤️ لایک شده';
+            likeBtn.classList.add('liked');
+          }
+          user.favorites = favs;
+          await put('users', user);
+          currentUser.favorites = favs;
+          sessionStorage.setItem('gallery_user', JSON.stringify(currentUser));
+          if (showingFavorites) applyFilters();
+          renderPhotos();
+        } catch (err) {
+          console.error('Like error:', err);
+          showToast('خطا: ' + err.message);
+        }
+      });
+
+      // "More info" button - opens link
+      moreBtn.addEventListener('click', () => {
+        const url = moreBtn.dataset.url;
+        if (url && url.trim() !== '') {
+          window.open(url, '_blank');
+        }
+      });
+
+      // ============ MODAL CONTROLS ============
+      photoModalClose.addEventListener('click', () => photoModal.classList.remove('open'));
+      editModalClose.addEventListener('click', () => editPhotoModal.classList.remove('open'));
+      photoModal.addEventListener('click', (e) => {
+        if (e.target === photoModal) photoModal.classList.remove('open');
+      });
+      editPhotoModal.addEventListener('click', (e) => {
+        if (e.target === editPhotoModal) editPhotoModal.classList.remove('open');
+      });
+
+      // ============ SHARE & DOWNLOAD ============
+      shareBtn.addEventListener('click', () => {
+        const url = detailImage.src;
+        if (!url) return;
+        const text = `🖼️ ${detailName.textContent}\n${detailDesc.textContent}\n${url}`;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(() => showToast('متن کپی شد!')).catch(() => fallbackCopy(text));
+        } else { fallbackCopy(text); }
+      });
+      function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try { document.execCommand('copy'); showToast('متن کپی شد!'); } catch (e) { showToast('کپی نشد.'); }
+        document.body.removeChild(textarea);
+      }
+      downloadBtn.addEventListener('click', async () => {
+        const url = detailImage.src;
+        if (!url) return;
+        try {
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = detailName.textContent || 'photo';
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } catch { showToast('دانلود ممکن نیست.'); }
+      });
+
+      // ============ SEARCH ============
+      searchInput.addEventListener('input', applyFilters);
+
+      // ============ DRAWER ============
+      hamburgerBtn.addEventListener('click', openDrawer);
+      drawerCloseBtn.addEventListener('click', closeDrawer);
+      drawerBackdrop.addEventListener('click', closeDrawer);
+
+      // ============ AUTH UI SWITCH ============
+      showRegister.addEventListener('click', () => {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+      });
+      showLogin.addEventListener('click', () => {
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+      });
+      loginBtn.addEventListener('click', handleLogin);
+      registerBtn.addEventListener('click', handleRegister);
+      logoutBtn.addEventListener('click', logout);
+
+      // ============ INIT ============
+      if (!checkSession()) {
+        showAuth();
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+      }
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          if (!loginForm.classList.contains('hidden')) handleLogin();
+          else if (!registerForm.classList.contains('hidden')) handleRegister();
+        }
+      });
+
+      console.log('✅ گالری آنلاین با تمام قابلیت‌ها');
+    })();
+  </script>
+</body>
+  </html>
